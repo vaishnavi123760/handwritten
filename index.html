@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MNIST Digit Predictor</title>
+    <link rel="icon" href="logo.png">
+    <meta name="description" content="Handwritten digit recognition using CNNs" />
+    <meta name="author" content="MNIST Predictor Team" />
+    <meta property="og:title" content="MNIST Digit Predictor" />
+    <meta property="og:description" content="Handwritten digit recognition using CNNs" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://images.unsplash.com/photo-1600585154340-be6161a56a0c" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://images.unsplash.com/photo-1600585154340-be6161a56a0c" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: Arial, sans-serif;
+        width: 100vw;
+        height: 100vh;
+        overflow: auto;
+        color: #fff;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+      }
+
+      body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: -1;
+      }
+
+      #home {
+        background-image: url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c');
+        background-size: cover;
+        background-position: center;
+      }
+      #signin {
+        background-image: url('https://images.unsplash.com/photo-1547127796-06bb04e4b315?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');
+        background-size: cover;
+        background-position: center;
+      }
+      #signup {
+        background-image: url('https://images.unsplash.com/photo-1731678268872-e5805b7bed5e?q=80&w=1935&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');
+        background-size: cover;
+        background-position: center;
+      }
+      #draw {
+        background: none;
+      }
+      #results {
+        background-image: url('https://images.unsplash.com/photo-1467709757686-06cbdd818d90?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');
+        background-size: cover;
+        background-position: center;
+      }
+      #graph {
+        background-image: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e');
+        background-size: cover;
+        background-position: center;
+      }
+
+      .container {
+        background: rgba(0, 0, 0, 0.8);
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        max-width: 800px;
+        width: 100%;
+        text-align: center;
+        color: #fff;
+        display: none;
+        margin: 20px auto;
+        flex-grow: 1;
+      }
+
+      .container.active {
+        display: block;
+      }
+
+      #draw.active {
+        display: flex;
+        flex-direction: row;
+        max-width: 100%;
+        margin: 0;
+        padding: 0;
+        border-radius: 0;
+        box-shadow: none;
+        background: none;
+      }
+
+      #draw .draw-left,
+      #draw .draw-right {
+        flex: 1;
+        padding: 20px;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100%;
+      }
+
+      #draw .draw-left {
+        background-image: url('https://images.unsplash.com/photo-1462331940025-496dfbfc7564');
+        background-size: cover;
+        background-position: center;
+      }
+
+      #draw .draw-right {
+        background-image: url('https://images.unsplash.com/photo-1462331940025-496dfbfc7564');
+        background-size: cover;
+        background-position: center;
+      }
+
+      #draw .draw-left::before,
+      #draw .draw-right::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: -1;
+      }
+
+      @media (max-width: 768px) {
+        #draw.active {
+          flex-direction: column;
+        }
+        #draw .draw-left,
+        #draw .draw-right {
+          width: 100%;
+          min-height: auto;
+        }
+      }
+
+      .nav {
+        width: 100%;
+        text-align: center;
+        padding: 10px 0;
+        background: rgba(0, 0, 0, 0.7);
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 10;
+      }
+
+      .nav a {
+        margin: 0 15px;
+        text-decoration: none;
+        color: #00b7ff;
+        font-weight: bold;
+        font-size: 1.2em;
+        cursor: pointer;
+      }
+
+      .nav a:hover {
+        color: #0086b3;
+      }
+
+      h1 {
+        margin-bottom: 20px;
+        font-size: 2em;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      p {
+        font-size: 1.2em;
+        margin: 20px 0;
+      }
+
+      .btn {
+        display: inline-block;
+        padding: 10px 15px;
+        background-color: #00b7ff;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        margin: 5px;
+        cursor: pointer;
+        font-size: 0.9em;
+        transition: transform 0.2s, background-color 0.3s;
+      }
+
+      .btn:hover {
+        background-color: #0086b3;
+        transform: scale(1.05);
+      }
+
+      .btn i {
+        margin-right: 5px;
+      }
+
+      canvas {
+        border: 2px solid #fff;
+        background-color: #fff;
+        margin-bottom: 20px;
+        position: relative;
+        cursor: crosshair;
+      }
+
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+
+      .control-group {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      label {
+        font-size: 0.9em;
+        margin-right: 5px;
+      }
+
+      input[type="color"] {
+        width: 40px;
+        height: 40px;
+        padding: 2px;
+        border: none;
+        cursor: pointer;
+      }
+
+      input[type="range"] {
+        width: 100px;
+      }
+
+      .signature {
+        margin-top: 20px;
+        font-size: 0.9em;
+        color: #ccc;
+        text-align: center;
+      }
+
+      #grid {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 280px;
+        height: 280px;
+        pointer-events: none;
+        display: none;
+      }
+
+      #digit {
+        font-weight: bold;
+        font-size: 1.5em;
+        color: #00b7ff;
+      }
+
+      #graphContainer {
+        width: 100%;
+        max-width: 600px;
+        margin: 20px auto;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        padding: 10px;
+      }
+
+      #predictionGraph {
+        width: 100%;
+        height: 300px;
+      }
+
+      #brushFeatures {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+
+      .brush-option {
+        display: flex;
+        align-items: center;
+        margin-bottom: 5px;
+      }
+
+      .brush-option label {
+        margin-right: 10px;
+      }
+
+      .user-profile {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+        padding: 10px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .user-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        margin-right: 20px;
+        background-color: #00b7ff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2em;
+        color: #fff;
+        position: relative;
+      }
+
+      .guest-logo {
+        position: absolute;
+        bottom: 5px;
+        right: 5px;
+        font-size: 0.8em;
+        background: #fff;
+        color: #000;
+        border-radius: 50%;
+        padding: 2px;
+        display: none;
+      }
+
+      .guest-logo.active {
+        display: block;
+      }
+
+      .user-info {
+        text-align: left;
+      }
+
+      .user-name {
+        font-size: 1.5em;
+        font-weight: bold;
+        margin-bottom: 5px;
+      }
+
+      .user-stats {
+        font-size: 0.9em;
+        color: #ccc;
+      }
+
+      .accuracy-highlight {
+        font-size: 1.2em;
+        color: #00b7ff;
+        font-weight: bold;
+      }
+
+      .preview-container {
+        margin-top: 20px;
+        text-align: left;
+      }
+
+      #previewCanvas {
+        border: 2px solid #fff;
+        background-color: #000;
+        margin-top: 10px;
+      }
+
+      .user-options {
+        margin-bottom: 20px;
+      }
+
+      .sparkle {
+        position: fixed;
+        width: 8px;
+        height: 8px;
+        background: #ffd700;
+        border-radius: 50%;
+        box-shadow: 0 0 10px #ffd700, 0 0 20px #ffd700;
+        pointer-events: none;
+        z-index: 1000;
+        animation: sparkle 0.6s ease-out forwards;
+      }
+
+      @keyframes sparkle {
+        0% { opacity: 1; transform: scale(0.5) rotate(0deg); }
+        50% { opacity: 0.7; transform: scale(1.2) rotate(180deg); }
+        100% { opacity: 0; transform: scale(0.8) rotate(360deg); }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="nav">
+      <a onclick="showView('home')">Home</a>
+      <a onclick="showView('draw')">Draw</a>
+      <a onclick="showView('results')">Results</a>
+      <a onclick="showView('graph')">Graph</a>
+    </div>
+
+    <!-- Home View -->
+    <div id="home" class="container active">
+      <h1><i class="fas fa-home"></i> Welcome to MNIST Digit Predictor</h1>
+      <div class="user-options">
+        <p>Choose your mode:</p>
+        <button class="btn" onclick="setGuestUser()"><i class="fas fa-user-circle"></i> Guest</button>
+        <button class="btn" onclick="showView('signin')"><i class="fas fa-sign-in-alt"></i> Sign In</button>
+        <button class="btn" onclick="showView('signup')"><i class="fas fa-user-plus"></i> Sign Up</button>
+      </div>
+      <div class="user-profile">
+        <div class="user-avatar">
+          <i class="fas fa-user"></i>
+          <i class="fas fa-user-circle guest-logo" id="guestLogo" title="Guest Mode"></i>
+        </div>
+        <div class="user-info">
+          <div class="user-name" id="userName">Guest User</div>
+          <div class="user-stats">
+            <div>Accuracy Rate: <span class="accuracy-highlight" id="accuracyRate">N/A</span></div>
+            <div>Predictions Made: <span id="predictionCount">0</span></div>
+            <div>Last Login: <span id="lastLogin">Today</span></div>
+          </div>
+        </div>
+      </div>
+      <p>Welcome to the MNIST Digit Predictor! This application uses convolutional neural networks to recognize handwritten digits from 0 to 9.</p>
+      <p>Here are some features:</p>
+      <ul style="text-align: left; display: inline-block;">
+        <li>Draw digits with custom brush settings</li>
+        <li>Get real-time predictions from our AI model</li>
+        <li>View probability distribution for all digits</li>
+        <li>Rate prediction accuracy and track stats</li>
+        <li>Choose between guest mode or sign in/up</li>
+      </ul>
+      <button class="btn" onclick="showView('draw')"><i class="fas fa-pencil-alt"></i> Start Drawing</button>
+      <button class="btn" onclick="resetStats()"><i class="fas fa-sync-alt"></i> Reset Stats</button>
+    </div>
+
+    <!-- Sign In View -->
+    <div id="signin" class="container">
+      <h1><i class="fas fa-sign-in-alt"></i> Sign In</h1>
+      <p>Sign in functionality coming soon! Please use Guest mode or Sign Up.</p>
+      <button class="btn" onclick="signIn()"><i class="fas fa-check"></i> Sign In (Placeholder)</button>
+      <button class="btn" onclick="showView('home')"><i class="fas fa-arrow-left"></i> Back to Home</button>
+    </div>
+
+    <!-- Sign Up View -->
+    <div id="signup" class="container">
+      <h1><i class="fas fa-user-plus"></i> Sign Up</h1>
+      <p>Sign up functionality coming soon! Please use Guest mode or Sign In.</p>
+      <button class="btn" onclick="signUp()"><i class="fas fa-check"></i> Sign Up (Placeholder)</button>
+      <button class="btn" onclick="showView('home')"><i class="fas fa-arrow-left"></i> Back to Home</button>
+    </div>
+
+    <!-- Draw View -->
+    <div id="draw" class="container">
+      <div class="draw-left">
+        <h1><i class="fas fa-pencil-alt"></i> Draw a Digit</h1>
+        <div class="controls">
+          <div class="control-group">
+            <label for="colorPicker">Color:</label>
+            <input type="color" id="colorPicker" value="#000000" title="Choose brush color">
+          </div>
+          <div class="control-group">
+            <label for="brushSize">Brush Size:</label>
+            <input type="range" id="brushSize" min="1" max="20" value="10" title="Adjust brush size">
+            <span id="brushSizeValue">10px</span>
+          </div>
+          <div id="brushFeatures">
+            <div class="brush-option">
+              <label for="brushType">Brush Type:</label>
+              <select id="brushType">
+                <option value="round">Round</option>
+                <option value="square">Square</option>
+                <option value="dotted">Dotted</option>
+                <option value="dashed">Dashed</option>
+              </select>
+            </div>
+            <div class="brush-option">
+              <label for="brushOpacity">Opacity:</label>
+              <input type="range" id="brushOpacity" min="0.1" max="1" step="0.1" value="1">
+              <span id="brushOpacityValue">100%</span>
+            </div>
+          </div>
+          <div class="control-group">
+            <button class="btn" onclick="setPencil()" title="Draw with pencil"><i class="fas fa-pencil-alt"></i> Pencil</button>
+            <button class="btn" onclick="setEraser()" title="Erase parts of the drawing"><i class="fas fa-eraser"></i> Eraser</button>
+          </div>
+        </div>
+        <div style="position: relative;">
+          <canvas id="canvas" width="280" height="280"></canvas>
+          <canvas id="grid" width="280" height="280"></canvas>
+        </div>
+        <div>
+          <button class="btn" onclick="undo()" title="Undo last action"><i class="fas fa-undo"></i> Undo</button>
+          <button class="btn" onclick="redo()" title="Redo last action"><i class="fas fa-redo"></i> Redo</button>
+          <button class="btn" onclick="toggleGrid()" title="Toggle canvas grid"><i class="fas fa-th"></i> Grid</button>
+          <button class="btn" onclick="clearCanvas()" title="Clear canvas"><i class="fas fa-trash"></i> Clear</button>
+          <button class="btn" onclick="saveDrawing()" title="Save drawing as PNG"><i class="fas fa-download"></i> Save</button>
+          <button class="btn" onclick="predictDigit()" title="Predict the digit"><i class="fas fa-brain"></i> Predict</button>
+        </div>
+      </div>
+      <div class="draw-right">
+        <p>Draw a digit (0-9) on the canvas. Tips:</p>
+        <ul style="text-align: left; display: inline-block;">
+          <li>Use a bold, black brush (10-15px size).</li>
+          <li>Center the digit and fill most of the canvas.</li>
+          <li>The model expects a white digit on a black background (image will be inverted).</li>
+        </ul>
+        <div class="preview-container">
+          <p>Preview (28x28, as sent to model):</p>
+          <canvas id="previewCanvas" width="28" height="28"></canvas>
+        </div>
+        <div class="signature">
+          With heartful thanks for visiting our page
+        </div>
+      </div>
+    </div>
+
+    <!-- Results View -->
+    <div id="results" class="container">
+      <h1><i class="fas fa-chart-bar"></i> Prediction Results</h1>
+      <p id="result">Predicted Digit: <span id="digit">N/A</span></p>
+      <p>Is this correct?</p>
+      <div>
+        <button class="btn" onclick="ratePrediction(true)"><i class="fas fa-check"></i> Yes</button>
+        <button class="btn" onclick="ratePrediction(false)"><i class="fas fa-times"></i> No</button>
+      </div>
+      <div>
+        <button class="btn" onclick="showView('draw')"><i class="fas fa-pencil-alt"></i> Draw Another Digit</button>
+        <button class="btn" onclick="rePredictDigit()"><i class="fas fa-sync-alt"></i> Re-Predict</button>
+        <button class="btn" onclick="showView('graph')"><i class="fas fa-chart-bar"></i> View Probabilities</button>
+      </div>
+    </div>
+
+    <!-- Graph View -->
+    <div id="graph" class="container">
+      <h1><i class="fas fa-chart-bar"></i> Prediction Probabilities</h1>
+      <div id="graphContainer">
+        <canvas id="predictionGraph"></canvas>
+      </div>
+      <div>
+        <button class="btn" onclick="showView('draw')"><i class="fas fa-pencil-alt"></i> Draw Another Digit</button>
+        <button class="btn" onclick="showView('results')"><i class="fas fa-arrow-left"></i> Back to Results</button>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script>
+      const BASE_URL = ''; // Use '' for same-origin (served by Flask), or 'http://localhost:5000' if frontend is served separately (e.g., http-server on port 5500)
+
+      let userData = JSON.parse(localStorage.getItem('mnistUserData')) || {
+        name: "Guest User",
+        predictions: 0,
+        correctPredictions: 0,
+        accuracy: "N/A",
+        lastLogin: new Date().toLocaleDateString(),
+        isGuest: true
+      };
+
+      let currentProbabilities = Array(10).fill(0);
+      let canvas, ctx, gridCanvas, gridCtx, previewCanvas, previewCtx;
+      let strokes = [], redoStack = [], isDrawing = false, isErasing = false, showGrid = false;
+      let brushColor = '#000000';
+      let brushSize = 10;
+      let brushType = 'round';
+      let brushOpacity = 1;
+
+      function showView(viewId) {
+        document.querySelectorAll('.container').forEach(container => {
+          container.classList.remove('active');
+        });
+        document.getElementById(viewId).classList.add('active');
+        if (viewId !== 'draw') {
+          document.body.style.backgroundImage = document.getElementById(viewId).style.backgroundImage;
+          document.body.classList.add('sparkle-effect');
+        } else {
+          document.body.style.backgroundImage = 'none';
+          document.body.classList.remove('sparkle-effect');
+        }
+        if (viewId === 'draw') {
+          initCanvas();
+        }
+        if (viewId === 'graph' && currentProbabilities.some(p => p > 0)) {
+          console.log('Generating graph with probabilities:', currentProbabilities);
+          generateGraph(currentProbabilities);
+        }
+      }
+
+      function signIn() {
+        Toastify({
+          text: "Sign In functionality coming soon!",
+          duration: 3000,
+          gravity: 'top',
+          position: 'right',
+          backgroundColor: '#00b7ff'
+        }).showToast();
+        userData.name = "Signed In User";
+        userData.isGuest = false;
+        updateGuestLogo();
+        saveUserData();
+        initUserData();
+        showView('home');
+      }
+
+      function signUp() {
+        Toastify({
+          text: "Sign Up functionality coming soon!",
+          duration: 3000,
+          gravity: 'top',
+          position: 'right',
+          backgroundColor: '#00b7ff'
+        }).showToast();
+        userData.name = "New User";
+        userData.isGuest = false;
+        updateGuestLogo();
+        saveUserData();
+        initUserData();
+        showView('home');
+      }
+
+      function setGuestUser() {
+        userData.name = "Guest User";
+        userData.isGuest = true;
+        updateGuestLogo();
+        saveUserData();
+        initUserData();
+        Toastify({
+          text: "Switched to Guest User mode",
+          duration: 3000,
+          gravity: 'top',
+          position: 'right',
+          backgroundColor: '#00b7ff'
+        }).showToast();
+        showView('home');
+      }
+
+      function updateGuestLogo() {
+        const guestLogo = document.getElementById('guestLogo');
+        if (userData.isGuest) {
+          guestLogo.classList.add('active');
+        } else {
+          guestLogo.classList.remove('active');
+        }
+      }
+
+      function resetStats() {
+        console.log('Resetting stats...');
+        userData.predictions = 0;
+        userData.correctPredictions = 0;
+        userData.accuracy = "N/A";
+        saveUserData();
+        initUserData();
+        Toastify({
+          text: "User stats reset! Predictions and accuracy cleared.",
+          duration: 3000,
+          gravity: 'top',
+          position: 'right',
+          backgroundColor: '#00b7ff'
+        }).showToast();
+      }
+
+      function initCanvas() {
+        canvas = document.getElementById('canvas');
+        ctx = canvas.getContext('2d');
+        gridCanvas = document.getElementById('grid');
+        gridCtx = gridCanvas.getContext('2d');
+        previewCanvas = document.getElementById('previewCanvas');
+        previewCtx = previewCanvas.getContext('2d');
+        const colorPicker = document.getElementById('colorPicker');
+        const brushSizeRange = document.getElementById('brushSize');
+        const brushTypeSelect = document.getElementById('brushType');
+        const brushOpacityRange = document.getElementById('brushOpacity');
+
+        ctx.lineCap = brushType;
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize;
+        ctx.globalAlpha = brushOpacity;
+
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        document.getElementById('brushSizeValue').textContent = brushSize + 'px';
+        document.getElementById('brushOpacityValue').textContent = Math.round(brushOpacity * 100) + '%';
+
+        // Remove existing event listeners to prevent duplicates
+        canvas.removeEventListener('mousedown', startDrawing);
+        canvas.removeEventListener('mousemove', draw);
+        canvas.removeEventListener('mouseup', stopDrawing);
+        canvas.removeEventListener('mouseout', stopDrawing);
+        canvas.removeEventListener('touchstart', handleTouchStart);
+        canvas.removeEventListener('touchmove', handleTouchMove);
+        canvas.removeEventListener('touchend', stopDrawing);
+        canvas.removeEventListener('mouseup', updatePreview);
+        canvas.removeEventListener('touchend', updatePreview);
+
+        colorPicker.addEventListener('change', () => {
+          isErasing = false;
+          brushColor = colorPicker.value;
+          updateBrush();
+        });
+
+        brushSizeRange.addEventListener('input', () => {
+          brushSize = parseInt(brushSizeRange.value);
+          document.getElementById('brushSizeValue').textContent = brushSize + 'px';
+          updateBrush();
+        });
+
+        brushTypeSelect.addEventListener('change', () => {
+          brushType = brushTypeSelect.value;
+          updateBrush();
+        });
+
+        brushOpacityRange.addEventListener('input', () => {
+          brushOpacity = parseFloat(brushOpacityRange.value);
+          document.getElementById('brushOpacityValue').textContent = Math.round(brushOpacity * 100) + '%';
+          updateBrush();
+        });
+
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+
+        canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+        canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+        canvas.addEventListener('touchend', stopDrawing);
+
+        canvas.addEventListener('mouseup', updatePreview);
+        canvas.addEventListener('touchend', updatePreview);
+      }
+
+      function updateBrush() {
+        ctx.strokeStyle = isErasing ? '#ffffff' : brushColor;
+        ctx.lineWidth = brushSize;
+        ctx.lineCap = brushType === 'square' ? 'square' : 'round';
+        ctx.globalAlpha = brushOpacity;
+        if (brushType === 'dotted') {
+          ctx.setLineDash([2, 10]);
+        } else if (brushType === 'dashed') {
+          ctx.setLineDash([10, 10]);
+        } else {
+          ctx.setLineDash([]);
+        }
+      }
+
+      function handleTouchStart(e) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const mouseEvent = new MouseEvent('mousedown', {
+          clientX: touch.clientX,
+          clientY: touch.clientY
+        });
+        canvas.dispatchEvent(mouseEvent);
+      }
+
+      function handleTouchMove(e) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const mouseEvent = new MouseEvent('mousemove', {
+          clientX: touch.clientX,
+          clientY: touch.clientY
+        });
+        canvas.dispatchEvent(mouseEvent);
+      }
+
+      function startDrawing(e) {
+        isDrawing = true;
+        strokes.push([]);
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+
+        strokes[strokes.length - 1].push({
+          x, y,
+          color: ctx.strokeStyle,
+          size: ctx.lineWidth,
+          type: brushType,
+          opacity: ctx.globalAlpha,
+          lineDash: ctx.getLineDash()
+        });
+      }
+
+      function draw(e) {
+        if (!isDrawing) return;
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        strokes[strokes.length - 1].push({
+          x, y,
+          color: ctx.strokeStyle,
+          size: ctx.lineWidth,
+          type: brushType,
+          opacity: ctx.globalAlpha,
+          lineDash: ctx.getLineDash()
+        });
+
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+      }
+
+      function stopDrawing() {
+        if (isDrawing) {
+          isDrawing = false;
+          ctx.beginPath();
+          redoStack = [];
+        }
+      }
+
+      function clearCanvas() {
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        strokes = [];
+        redoStack = [];
+        updatePreview();
+      }
+
+      function setPencil() {
+        isErasing = false;
+        brushColor = document.getElementById('colorPicker').value;
+        updateBrush();
+      }
+
+      function setEraser() {
+        isErasing = true;
+        brushColor = '#ffffff';
+        updateBrush();
+      }
+
+      function saveDrawing() {
+        const link = document.createElement('a');
+        link.download = 'digit.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        Toastify({
+          text: "Drawing saved as PNG!",
+          duration: 3000,
+          gravity: 'top',
+          position: 'right',
+          backgroundColor: '#00b7ff'
+        }).showToast();
+      }
+
+      function undo() {
+        if (strokes.length === 0) return;
+        redoStack.push(strokes.pop());
+        redrawCanvas();
+        updatePreview();
+      }
+
+      function redo() {
+        if (redoStack.length === 0) return;
+        strokes.push(redoStack.pop());
+        redrawCanvas();
+        updatePreview();
+      }
+
+      function redrawCanvas() {
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        strokes.forEach(stroke => {
+          if (stroke.length < 1) return;
+
+          ctx.beginPath();
+          stroke.forEach((point, i) => {
+            ctx.strokeStyle = point.color;
+            ctx.lineWidth = point.size;
+            ctx.lineCap = point.type === 'square' ? 'square' : 'round';
+            ctx.globalAlpha = point.opacity;
+            ctx.setLineDash(point.lineDash || []);
+
+            if (i === 0) {
+              ctx.moveTo(point.x, point.y);
+            } else {
+              ctx.lineTo(point.x, point.y);
+              ctx.stroke();
+              ctx.beginPath();
+              ctx.moveTo(point.x, point.y);
+            }
+          });
+          ctx.stroke();
+        });
+        ctx.setLineDash([]);
+      }
+
+      function toggleGrid() {
+        showGrid = !showGrid;
+        gridCanvas.style.display = showGrid ? 'block' : 'none';
+
+        if (showGrid) {
+          gridCtx.clearRect(0, 0, gridCanvas.width, gridCanvas.height);
+          gridCtx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+          gridCtx.lineWidth = 1;
+          const cellSize = 28;
+
+          for (let x = 0; x <= canvas.width; x += cellSize) {
+            gridCtx.beginPath();
+            gridCtx.moveTo(x, 0);
+            gridCtx.lineTo(x, canvas.height);
+            gridCtx.stroke();
+          }
+
+          for (let y = 0; y <= canvas.height; y += cellSize) {
+            gridCtx.beginPath();
+            gridCtx.moveTo(0, y);
+            gridCtx.lineTo(canvas.width, y);
+            gridCtx.stroke();
+          }
+        }
+      }
+
+      // Function to validate the canvas content before prediction
+      function validateCanvas() {
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        let hasContent = false;
+        for (let i = 0; i < imageData.data.length; i += 4) {
+          if (imageData.data[i] < 255 || imageData.data[i + 1] < 255 || imageData.data[i + 2] < 255) {
+            hasContent = true;
+            break;
+          }
+        }
+        return hasContent;
+      }
+
+      async function predictDigit(rePredict = false) {
+        // Validate canvas content
+        if (!validateCanvas()) {
+            Toastify({
+                text: "Canvas is empty. Please draw a digit before predicting.",
+                duration: 5000,
+                gravity: 'top',
+                position: 'right',
+                backgroundColor: '#ff4444'
+            }).showToast();
+            return;
+        }
+
+        const imageData = canvas.toDataURL('image/png');
+        console.log('Sending prediction request with image data:', imageData.substring(0, 100) + '...');
+
+        // Verify image data format
+        if (!imageData.startsWith('data:image/png;base64,')) {
+            Toastify({
+                text: "Invalid image data format. Please try drawing again.",
+                duration: 5000,
+                gravity: 'top',
+                position: 'right',
+                backgroundColor: '#ff4444'
+            }).showToast();
+            return;
+        }
+
+        try {
+            // Log the BASE_URL being used
+            console.log(`Using BASE_URL: ${BASE_URL}`);
+
+            // Test server connectivity before sending the request
+            console.log('Testing server connectivity with GET request to /');
+            const testResponse = await fetch(`${BASE_URL}/`, { method: 'GET' });
+            if (!testResponse.ok) {
+                throw new Error(`Server not reachable: ${testResponse.status} ${testResponse.statusText}`);
+            }
+            console.log('Server connectivity test passed');
+
+            // Send the prediction request
+            console.log('Sending POST request to /predict');
+            const response = await fetch(`${BASE_URL}/predict`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: imageData }),
+                mode: 'cors', // Explicitly set CORS mode
+                cache: 'no-cache' // Prevent caching issues
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Prediction request failed: ${response.status} ${response.statusText}. Details: ${errorText}`);
+            }
+
+            const result = await response.json();
+            if (result.error) {
+                throw new Error(result.error);
+            }
+
+            console.log('Prediction result:', result);
+            document.getElementById('digit').textContent = result.digit;
+            currentProbabilities = result.probabilities || Array(10).fill(0);
+            userData.predictions++;
+            updateAccuracy();
+            saveUserData();
+            showView('results');
+            Toastify({
+                text: `${rePredict ? 'Re-predicted' : 'Predicted'} digit: ${result.digit}`,
+                duration: 3000,
+                gravity: 'top',
+                position: 'right',
+                backgroundColor: '#00b7ff'
+            }).showToast();
+        } catch (error) {
+            console.error('Prediction error:', error);
+            let errorMessage = error.message;
+            if (error.message.includes('Failed to fetch')) {
+                errorMessage = 'Unable to connect to the server. Please ensure the backend is running on localhost:5000, the BASE_URL is correctly set, and CORS is configured.';
+            } else if (error.message.includes('CORS')) {
+                errorMessage = 'CORS error. Ensure the backend (app.py) allows requests from this origin. Check CORS configuration in app.py.';
+            } else if (error.message.includes('405')) {
+                errorMessage = 'Method Not Allowed (405). The backend /predict endpoint does not accept POST requests. Please ensure app.py has @app.route("/predict", methods=["POST"]) and the Flask server was restarted after updating the file.';
+            } else if (error.message.includes('NetworkError')) {
+                errorMessage = 'Network error. Check your internet connection and ensure the server is running.';
+            }
+            Toastify({
+                text: `Error ${rePredict ? 're-predicting' : 'predicting'}: ${errorMessage}`,
+                duration: 5000,
+                gravity: 'top',
+                position: 'right',
+                backgroundColor: '#ff4444'
+            }).showToast();
+        }
+    }
+
+      async function rePredictDigit() {
+        predictDigit(true);
+      }
+
+      function ratePrediction(isCorrect) {
+        console.log('Rating prediction, isCorrect:', isCorrect);
+        if (isCorrect) {
+          userData.correctPredictions++;
+          Toastify({
+            text: "Prediction marked as correct!",
+            duration: 3000,
+            gravity: 'top',
+            position: 'right',
+            backgroundColor: '#00b7ff'
+          }).showToast();
+        } else {
+          Toastify({
+            text: "Prediction marked as incorrect. Re-predicting...",
+            duration: 3000,
+            gravity: 'top',
+            position: 'right',
+            backgroundColor: '#ff4444'
+          }).showToast();
+          rePredictDigit();
+        }
+        updateAccuracy();
+        saveUserData();
+      }
+
+      function updateAccuracy() {
+        console.log('Updating accuracy:', userData);
+        if (userData.predictions > 0) {
+          userData.accuracy = `${((userData.correctPredictions / userData.predictions) * 100).toFixed(1)}%`;
+        } else {
+          userData.accuracy = "N/A";
+        }
+        console.log('New accuracy:', userData.accuracy);
+        document.getElementById('accuracyRate').textContent = userData.accuracy;
+        document.getElementById('predictionCount').textContent = userData.predictions;
+      }
+
+      function saveUserData() {
+        console.log('Saving user data:', userData);
+        localStorage.setItem('mnistUserData', JSON.stringify(userData));
+      }
+
+      function generateGraph(probabilities) {
+        console.log('Generating graph with probabilities:', probabilities);
+        const ctx = document.getElementById('predictionGraph').getContext('2d');
+        if (window.myChart) {
+          window.myChart.destroy();
+        }
+        window.myChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
+            datasets: [{
+              label: 'Probability',
+              data: probabilities,
+              backgroundColor: 'rgba(0, 183, 255, 0.5)',
+              borderColor: 'rgba(0, 183, 255, 1)',
+              borderWidth: 1
+            }]
+          },
+          options: {
+            scales: {
+              y: {
+                beginAtZero: true,
+                max: 1,
+                title: {
+                  display: true,
+                  text: 'Probability'
+                }
+              },
+              x: {
+                title: {
+                  display: true,
+                  text: 'Digit'
+                }
+              }
+            },
+            plugins: {
+              title: {
+                display: true,
+                text: 'Digit Prediction Probabilities'
+              }
+            }
+          }
+        });
+      }
+
+      function initUserData() {
+        document.getElementById('userName').textContent = userData.name;
+        document.getElementById('predictionCount').textContent = userData.predictions;
+        document.getElementById('accuracyRate').textContent = userData.accuracy;
+        document.getElementById('lastLogin').textContent = userData.lastLogin;
+        updateGuestLogo();
+      }
+
+      function updatePreview() {
+        const imageData = canvas.toDataURL('image/png');
+        const img = new Image();
+        img.onload = () => {
+          previewCtx.fillStyle = 'black';
+          previewCtx.fillRect(0, 0, 28, 28);
+          previewCtx.drawImage(img, 0, 0, 28, 28);
+          const imageData = previewCtx.getImageData(0, 0, 28, 28);
+          for (let i = 0; i < imageData.data.length; i += 4) {
+            imageData.data[i] = 255 - imageData.data[i];
+            imageData.data[i + 1] = 255 - imageData.data[i + 1];
+            imageData.data[i + 2] = 255 - imageData.data[i + 2];
+          }
+          previewCtx.putImageData(imageData, 0, 0);
+        };
+        img.src = imageData;
+      }
+
+      // Sparkle effect
+      document.addEventListener('mousemove', (e) => {
+        if (document.getElementById('draw').classList.contains('active')) return;
+        const sparkle = document.createElement('div');
+        sparkle.className = 'sparkle';
+        sparkle.style.left = `${e.clientX - 4}px`;
+        sparkle.style.top = `${e.clientY - 4}px`;
+        document.body.appendChild(sparkle);
+        setTimeout(() => {
+          sparkle.remove();
+        }, 600);
+      });
+
+      window.onload = function() {
+        initUserData();
+        showView('home');
+        document.body.classList.add('sparkle-effect');
+        document.body.style.backgroundImage = document.getElementById('home').style.backgroundImage;
+      };
+    </script>
+  </body>
+</html>
